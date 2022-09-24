@@ -52,14 +52,20 @@ for ticker in stocks:
 ############################ BACKTESTING ###############################
 
 df = copy.deepcopy(clhv)
- 
+
+# adding neccesary data into our dataframe
 for ticker in stocks:
     df[ticker].dropna(inplace=True)
     df[ticker]["above_cloud"] = 0
     df[ticker]["above_cloud"] = np.where((df[ticker]['Low'] > df[ticker]['senkou_span_a'])  & (df[ticker]['Low'] > df[ticker]['senkou_span_b'] ), 1, df[ticker]['above_cloud'])
     df[ticker]["above_cloud"] = np.where((df[ticker]['High'] < df[ticker]['senkou_span_a']) & (df[ticker]['High'] < df[ticker]['senkou_span_b']), -1, df[ticker]['above_cloud'])
     df[ticker]['A_above_B'] = np.where((df[ticker]['senkou_span_a'] > df[ticker]['senkou_span_b']), 1, -1)
-    
+    df[ticker]['tenkan_kiju_cross'] = np.NaN
+    df[ticker]['tenkan_kiju_cross'] = np.where((df[ticker]['tenkan_sen'].shift(1) <= df[ticker]['kijun_sen'].shift(1)) & (df[ticker]['tenkan_sen'] > df[ticker]['kijun_sen']), 1, df[ticker]['tenkan_kiju_cross'])
+    df[ticker]['tenkan_kiju_cross'] = np.where((df[ticker]['tenkan_sen'].shift(1) >= df[ticker]['kijun_sen'].shift(1)) & (df[ticker]['tenkan_sen'] < df[ticker]['kijun_sen']), -1, df[ticker]['tenkan_kiju_cross'])
+    df[ticker]['price_tenkan_cross'] = np.NaN
+    df[ticker]['price_tenkan_cross'] = np.where((df[ticker]['Open'].shift(1) <= df[ticker]['tenkan_sen'].shift(1)) & (df[ticker]['Open'] > df[ticker]['tenkan_sen']), 1, df[ticker]['price_tenkan_cross'])
+    df[ticker]['price_tenkan_cross'] = np.where((df[ticker]['Open'].shift(1) >= df[ticker]['tenkan_sen'].shift(1)) & (df[ticker]['Open'] < df[ticker]['tenkan_sen']), -1, df[ticker]['price_tenkan_cross'])
     
     
     
