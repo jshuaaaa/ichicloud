@@ -76,9 +76,8 @@ for ticker in stocks:
 
 
 
-tp = 0
-sl = 0
-i = 0
+
+
 ticker = "EUR=X"
 for ticker in stocks:
     print("calculating returns for ", ticker)
@@ -90,46 +89,47 @@ for ticker in stocks:
                 tickers_signal[ticker] = "Buy"
                 index = i
                 sl = df[ticker]["Adj Close"][i] * 0.997
-                tp = df[ticker]["Adj Close"][i] * 1.006
+                tp = df[ticker]["Adj Close"][i] * 1.002
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 30:
                 tickers_signal[ticker] = "Sell"
                 sl = df[ticker]["Adj Close"][i] * 1.003
-                tp = df[ticker]["Adj Close"][i] * 0.994
+                tp = df[ticker]["Adj Close"][i] * 0.998
                 
         elif tickers_signal[ticker] == "Buy":
             tickers_ret[ticker].append(((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
-            if tp >= df[ticker]["Adj Close"][i]:
-                tickers_signal[ticker] = ""
-                
-
-            elif sl <= df[ticker]["Adj Close"][i]:
-                tickers_signal[ticker] = ""
-                print("sotp loss working")
-            
-            elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 30:
-                tickers_signal[ticker] = "Sell"
-                
-            elif df[ticker]["RSI"][i] < 30:
-                tickers_signal[ticker] = ""
-                print("s")
-
-         
-            
-        elif tickers_signal[ticker] == "Sell":
-            tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
             if tp <= df[ticker]["Adj Close"][i]:
                 tickers_signal[ticker] = ""
+                
 
             elif sl >= df[ticker]["Adj Close"][i]:
                 tickers_signal[ticker] = ""
                 print("sotp loss working")
             
+            elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 30:
+                tickers_signal[ticker] = "Sell"
+
+                
+            elif (df[ticker]["above_cloud"][i-1] == -1):
+                tickers_signal[ticker] = ""
+                
+
+         
+            
+        elif tickers_signal[ticker] == "Sell":
+            tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
+            if tp >= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+
+            elif sl <= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+                print("sotp loss working at index ", df[ticker]["Adj Close"][i])
+            
             elif (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 70:
                 tickers_signal[ticker] = "Buy"
                 
-            elif df[ticker]["RSI"][i] > 70:
+            elif (df[ticker]["above_cloud"][i-1] == 1):
                 tickers_signal[ticker] = ""
-                print("s")
+                
                 
             
 
