@@ -3,6 +3,7 @@ import numpy as np
 import copy
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime as dt
 
 stocks = ["JPY=X", "EUR=X", "GBP=X", "MXNUSD=X", "CAD=X"]
 clhv = {}
@@ -40,11 +41,13 @@ def RSI(DF, n=14):
 
 
 
-# Downloading Data 
+# Downloading Data
+
+
 tickers_signal = {}
 tickers_ret = {}
 for ticker in stocks:
-    temp = yf.download(ticker, period='60d', interval='15m')
+    temp = yf.download(ticker, period="30d", interval='2m')
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
@@ -78,7 +81,9 @@ for ticker in stocks:
 
 
 
-ticker = "EUR=X"
+sl_count = 0
+tp_count = 0
+trade_count = 0
 for ticker in stocks:
     print("calculating returns for ", ticker)
     index = 0
@@ -87,34 +92,39 @@ for ticker in stocks:
             tickers_ret[ticker].append(0)
             if (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]-1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
                 tickers_signal[ticker] = "Buy"
-                index = i
-                sl = df[ticker]["Adj Close"][i] * 0.998
-                tp = df[ticker]["Adj Close"][i] * 1.001
+                
+                sl = df[ticker]["Adj Close"][i] * 0.997
+                tp = df[ticker]["Adj Close"][i] * 1.0003
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 40:
                 tickers_signal[ticker] = "Sell"
-                sl = df[ticker]["Adj Close"][i] * 1.0015
-                tp = df[ticker]["Adj Close"][i] * 0.996
+                sl = df[ticker]["Adj Close"][i] * 1.001
+                tp = df[ticker]["Adj Close"][i] * 0.997
                 
         elif tickers_signal[ticker] == "Buy":
+
             
             if tp <= df[ticker]["High"][i]:
                 tickers_signal[ticker] = ""
                 tickers_ret[ticker].append(((df[ticker]["High"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
-                
+                tp_count += 1
+                trade_count += 1
 
             elif sl >= df[ticker]["Low"][i]:
                 tickers_signal[ticker] = ""
                 tickers_ret[ticker].append(((df[ticker]["Low"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
-                print("sotp loss working")
+                sl_count += 1
+                trade_count += 1
             
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 40:
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
                 tickers_signal[ticker] = "Sell"
+                trade_count += 1
 
                 
             elif (df[ticker]["above_cloud"][i-1] == -1):
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
                 tickers_signal[ticker] = ""
+                trade_count += 1
             
             else:
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1)*50)
@@ -124,24 +134,28 @@ for ticker in stocks:
             
         elif tickers_signal[ticker] == "Sell":
             
+            
             if tp >= df[ticker]["Low"][i]:
                 tickers_ret[ticker].append(((df[ticker]["Low"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
                 tickers_signal[ticker] = ""
+                tp_count += 1
+                trade_count += 1
 
             elif sl <= df[ticker]["High"][i]:
                 tickers_ret[ticker].append(((df[ticker]["High"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
                 tickers_signal[ticker] = ""
-                print("sotp loss working at index ", df[ticker]["Adj Close"][i])
+                sl_count += 1
+                trade_count += 1
             
             elif (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
-                
                 tickers_signal[ticker] = "Buy"
+                trade_count += 1
                 
             elif (df[ticker]["above_cloud"][i-1] == 1):
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
-                
                 tickers_signal[ticker] = ""
+                trade_count += 1
             
             else:
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
@@ -159,7 +173,10 @@ for ticker in stocks:
 
     
 
-
+print("stop lossing triggered: ", sl_count)
+print("take_profit triggered: ", tp_count)
+print("we traded: ", trade_count)
+print("orders triggered:  ", sl_count + tp_count)
 strategy_df = pd.DataFrame()
 
 for ticker in stocks:
