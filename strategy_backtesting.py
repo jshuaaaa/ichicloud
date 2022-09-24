@@ -44,6 +44,7 @@ for ticker in stocks:
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
+    clhv[ticker]["RSI"] = RSI(clhv[ticker])
     tickers_signal[ticker] = ""
     tickers_ret[ticker] = []
     
