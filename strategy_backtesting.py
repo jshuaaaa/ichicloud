@@ -53,9 +53,12 @@ for ticker in stocks:
 
 df = copy.deepcopy(clhv)
  
-    
-    
-    
+for ticker in stocks:
+    df[ticker].dropna(inplace=True)
+    df[ticker]["above_cloud"] = 0
+    df[ticker]["above_cloud"] = np.where((df[ticker]['Low'] > df[ticker]['senkou_span_a'])  & (df[ticker]['Low'] > df[ticker]['senkou_span_b'] ), 1, df[ticker]['above_cloud'])
+    df[ticker]["above_cloud"] = np.where((df[ticker]['High'] < df[ticker]['senkou_span_a']) & (df[ticker]['High'] < df[ticker]['senkou_span_b']), -1, df[ticker]['above_cloud'])
+    df[ticker]['A_above_B'] = np.where((df[ticker]['senkou_span_a'] > df[ticker]['senkou_span_b']), 1, -1)
     
     
     
