@@ -44,7 +44,7 @@ def RSI(DF, n=14):
 tickers_signal = {}
 tickers_ret = {}
 for ticker in stocks:
-    temp = yf.download(ticker, period='60d', interval='15m')
+    temp = yf.download(ticker, period='1y', interval='1d')
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
@@ -75,30 +75,66 @@ for ticker in stocks:
     df[ticker]['price_tenkan_cross'] = np.where((df[ticker]['Open'].shift(1) >= df[ticker]['tenkan_sen'].shift(1)) & (df[ticker]['Open'] < df[ticker]['tenkan_sen']), -1, df[ticker]['price_tenkan_cross'])
 
 
-strategy_df = pd.DataFrame()
- 
+
+tp = 0
+sl = 0
+
+
 for ticker in stocks:
     print("calculating returns for ", ticker)
-
+    index = 0
     for i in range(len(df[ticker])):
         if tickers_signal[ticker] == "":
             tickers_ret[ticker].append(0)
             if (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
                 tickers_signal[ticker] = "Buy"
+                index = i
+                sl = df[ticker]["kijun_sen"][i] 
+                tp = df[ticker]["Adj Close"][i] - ((((2 * (sl / df[ticker]["Adj Close"][i])) - 1) * df[ticker]["Adj Close"][i]) - df[ticker]["Adj Close"][i])
+                
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 40:
                 tickers_signal[ticker] = "Sell"
+                sl = df[ticker]["kijun_sen"][i] 
+                tp = df[ticker]["Adj Close"][i] - ((((2 * (sl / df[ticker]["Adj Close"][i])) - 1) * df[ticker]["Adj Close"][i]) - df[ticker]["Adj Close"][i])
                 
                 
         elif tickers_signal[ticker] == "Buy":
-            tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1))
-            if (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 40:
-                tickers_signal[ticker] = "Sell"
+            tickers_ret[ticker].append((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1)
+            if tp <= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+
+            elif sl >= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+            
+            elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))  or df[ticker]['price_tenkan_cross'][i-1] == -1)  and df[ticker]["RSI"][i] < 40:
+                tickers_signal[ticker] = "Buy"
+                
+            elif df[ticker]["RSI"][i] < 50:
+                tickers_signal[ticker] = ""
+
          
             
         elif tickers_signal[ticker] == "Sell":
-            tickers_ret[ticker].append(((df[ticker]["Adj Close"][i]/df[ticker]["Adj Close"][i-1])-1))
-            if (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
+            tickers_ret[ticker].append((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)
+            if tp >= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+
+            elif sl <= df[ticker]["Adj Close"][i]:
+                tickers_signal[ticker] = ""
+            
+            elif (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
                 tickers_signal[ticker] = "Buy"
+                
+            elif df[ticker]["RSI"][i] > 50:
+                tickers_signal[ticker] = ""
+                
+            
+
+                
+                
+        
+        
+
     
     df[ticker]["ret"] = np.array(tickers_ret[ticker])
 
