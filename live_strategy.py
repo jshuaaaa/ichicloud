@@ -96,7 +96,7 @@ def main():
     try:
         for currency in pairs:
             print("Looking for trades for", currency)
-            params = {"instrument": currency}
+            params = {"instruments": currency}
             r = trade.TradesList(accountID=account_id,params=params)
             open_pos = client.request(r)
             long_short = ""
@@ -131,14 +131,16 @@ def main():
             signal = trade_signal(renko_merge(ohlc_df),long_short)
             
             if signal == "Buy":
-                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 1.0005,3)
+                r = pricing.PricingInfo(accountID=account_id, params=params)
+                rv = client.request(r)
+                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
+                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.0004,3)
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
             elif signal == "Sell":
-                sl = round(ohlc_df["c"].tolist()[-1] * 1.001,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.001,3)
+                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -148,15 +150,15 @@ def main():
                 print('position closed')
             
             elif signal == "Close_Buy":
-                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 1.0005,3)
+                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
+                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.0004,3)
                 market_order(currency,pos_size,sl,tp)
                 market_order(currency,pos_size,sl,tp)
                 print("short closed and long entered for ", currency)
             
             elif signal == "Close_Sell":
-                sl = round(ohlc_df["c"].tolist()[-1] * 1.001,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.001,3)
+                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
