@@ -132,13 +132,13 @@ def main():
             
             if signal == "Buy":
                 sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 1.0005,3)
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
             elif signal == "Sell":
-                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                sl = round(ohlc_df["c"].tolist()[-1] * 1.001,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -149,7 +149,7 @@ def main():
             
             elif signal == "Close_Buy":
                 sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
-                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 1.0005,3)
                 market_order(currency,pos_size,sl,tp)
                 market_order(currency,pos_size,sl,tp)
                 print("short closed and long entered for ", currency)
