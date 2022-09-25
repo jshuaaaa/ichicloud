@@ -54,11 +54,23 @@ def trade_signal(DF,l_s):
     signal = ""
     df = copy.deepcopy(DF)
     if l_s == "":
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+            signal = "Buy"
+        elif (((df["above_cloud"].tolist()[-1] == -1)  and (df["A_above_B"].tolist()[-1] == -1)  and (df['tenkan_kiju_cross'].tolist()[-1]==-1))  or df['price_tenkan_cross'].tolist()[-1] == -1)  and df["RSI"].tolist()[-1] < 40:
+            signal = "Sell"
    
     elif l_s == "long":
-
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]==1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+            signal = "Close_Buy"
+        elif (df['tenkan_kiju_cross'].tolist()[-1]==-1):
+            signal = "Close"
         
     elif l_s == "short":
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+            signal = "Close_Sell"
+        elif (df['tenkan_kiju_cross'].tolist()[-1]==1):
+            signal = "Close"
+            
 
     return signal
 
@@ -128,7 +140,7 @@ def main():
             ohlc_df['price_tenkan_cross'] = np.NaN
             ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) <= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] > ohlc_df['tenkan_sen']), 1, ohlc_df['price_tenkan_cross'])
             ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) >= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] < ohlc_df['tenkan_sen']), -1, ohlc_df['price_tenkan_cross'])
-            signal = trade_signal(renko_merge(ohlc_df),long_short)
+            signal = trade_signal(ohlc_df,long_short)
             
             if signal == "Buy":
                 r = pricing.PricingInfo(accountID=account_id, params=params)
@@ -167,4 +179,16 @@ def main():
     except:
         print("error encountered....skipping this iteration")
 
-    
+
+
+starttime=time.time()
+timeout = time.time() + 60  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
+
+while time.time() <= timeout:
+    try:
+        print("passthrough at ",time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
+        main()
+        time.sleep(300 - ((time.time() - starttime) % 300.0)) # 5 minute interval between each new execution
+    except KeyboardInterrupt:
+        print('\n\nKeyboard exception received. Exiting.')
+        exit()    
