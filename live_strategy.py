@@ -20,26 +20,26 @@ pos_size = 1000
 # indicators
 def ichimoku_cloud(DF):
     df = DF.copy()
-    nine_period_high = df['High'].rolling(window= 9).max()
-    nine_period_low = df['Low'].rolling(window= 9).min()
+    nine_period_high = df['h'].rolling(window= 9).max()
+    nine_period_low = df['l'].rolling(window= 9).min()
     df['tenkan_sen'] = (nine_period_high + nine_period_low) /2
     
-    period26_high = df['High'].rolling(window=26).max()
-    period26_low = df['Low'].rolling(window=26).min()
+    period26_high = df['h'].rolling(window=26).max()
+    period26_low = df['l'].rolling(window=26).min()
     df['kijun_sen'] = (period26_high + period26_low) / 2
     
     df['senkou_span_a'] = ((df['tenkan_sen'] + df['kijun_sen']) / 2).shift(26)
     # Senkou Span B (Leading Span B): (52-period high + 52-period low)/2))
-    period52_high = df['High'].rolling(window=52).max()
-    period52_low = df['Low'].rolling(window=52).min()
+    period52_high = df['h'].rolling(window=52).max()
+    period52_low = df['l'].rolling(window=52).min()
     df['senkou_span_b'] = ((period52_high + period52_low) / 2).shift(26)
     # The most current closing price plotted 26 time periods behind (optional)
-    df['chikou_span'] = df['Close'].shift(-26)
+    df['chikou_span'] = df['c'].shift(-26)
     return df.loc[:,['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']]
 
 def RSI(DF, n=14):
     df = DF.copy()
-    df["change"] = df["Adj Close"] - df["Adj Close"].shift(1)
+    df["change"] = df["c"] - df["c"].shift(1)
     df["gain"] = np.where(df["change"]>=0,df["change"], 0)
     df["loss"] = np.where(df["change"]<0,-1*df["change"], 0)
     df["avgGain"] = df["gain"].ewm(alpha=1/n, min_periods=n).mean()
@@ -87,4 +87,82 @@ def market_order(instrument,units,sl, tp):
             }
     r = orders.OrderCreate(accountID=account_id, data=data)
     client.request(r)
+    
+
+
+# Script for trading
+
+def main():
+    try:
+        for currency in pairs:
+            print("Looking for trades for", currency)
+            params = {"instrument": currency}
+            r = trade.TradesList(accountID=account_id,params=params)
+            open_pos = client.request(r)
+            long_short = ""
+            if len(open_pos["trades"])>0:
+                if int(open_pos['trades'][0]['initialUnits']) > 0:
+                    long_short = "long"
+                else:
+                    long_short='short'
+                
+            params = {"count":250,"granularity": "M5"}
+            candles = instruments.InstrumentsCandles(instrument=currency, params=params)
+            client.request(candles)
+            ohlc_dict = candles.response["candles"]
+            temp = pd.DataFrame(ohlc_dict)
+            ohlc_df = temp.mid.dropna().apply(pd.Series)
+            ohlc_df["volume"] = temp["volume"]
+            ohlc_df.index = temp["time"]
+            ohlc_df = ohlc_df.apply(pd.to_numeric)
+            ohlc_df[['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(ohlc_df)
+            ohlc_df["RSI"] = RSI(ohlc_df)
+
+            ohlc_df["above_cloud"] = 0
+            ohlc_df["above_cloud"] = np.where((ohlc_df['l'] > ohlc_df['senkou_span_a'])  & (ohlc_df['l'] > ohlc_df['senkou_span_b'] ), 1, ohlc_df['above_cloud'])
+            ohlc_df["above_cloud"] = np.where((ohlc_df['h'] < ohlc_df['senkou_span_a']) & (ohlc_df['h'] < ohlc_df['senkou_span_b']), -1, ohlc_df['above_cloud'])
+            ohlc_df['A_above_B'] = np.where((ohlc_df['senkou_span_a'] > ohlc_df['senkou_span_b']), 1, -1)
+            ohlc_df['tenkan_kiju_cross'] = np.NaN
+            ohlc_df['tenkan_kiju_cross'] = np.where((ohlc_df['tenkan_sen'].shift(1) <= ohlc_df['kijun_sen'].shift(1)) & (ohlc_df['tenkan_sen'] > ohlc_df['kijun_sen']), 1, ohlc_df['tenkan_kiju_cross'])
+            ohlc_df['tenkan_kiju_cross'] = np.where((ohlc_df['tenkan_sen'].shift(1) >= ohlc_df['kijun_sen'].shift(1)) & (ohlc_df['tenkan_sen'] < ohlc_df['kijun_sen']), -1, ohlc_df['tenkan_kiju_cross'])
+            ohlc_df['price_tenkan_cross'] = np.NaN
+            ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) <= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] > ohlc_df['tenkan_sen']), 1, ohlc_df['price_tenkan_cross'])
+            ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) >= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] < ohlc_df['tenkan_sen']), -1, ohlc_df['price_tenkan_cross'])
+            signal = trade_signal(renko_merge(ohlc_df),long_short)
+            
+            if signal == "Buy":
+                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                market_order(currency,pos_size,sl,tp)
+                print("long entered for ", currency)
+            
+            elif signal == "Sell":
+                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                market_order(currency,-1*pos_size,sl,tp)
+                print("short entered for ", currency)
+            
+            elif signal == "Close":
+                cl = trade.TradeClose(accountID=account_id, tradeID=open_pos['trades'][0]['id'])
+                client.request(cl)
+                print('position closed')
+            
+            elif signal == "Close_Buy":
+                sl = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 1.0007,3)
+                market_order(currency,pos_size,sl,tp)
+                market_order(currency,pos_size,sl,tp)
+                print("short closed and long entered for ", currency)
+            
+            elif signal == "Close_Sell":
+                sl = round(ohlc_df["c"].tolist()[-1] * 1.001,3)
+                tp = round(ohlc_df["c"].tolist()[-1] * 0.997,3)
+                market_order(currency,-1*pos_size,sl,tp)
+                market_order(currency,-1*pos_size,sl,tp)
+                print("short entered for ", currency)
+                
+                
+    except:
+        print("error encountered....skipping this iteration")
+
     
