@@ -14,7 +14,7 @@ token_path = "D:\My Apps\API-KEYS\oanda.txt"
 client = oandapyV20.API(access_token=open(token_path, "r").read(),environment="practice")
 account_id = "101-001-23303695-001"
 
-pairs = ['GBP_USD', 'AUD_USD', "NZD_USD", "EUR_USD", "EUR_TRY", "TRY_JPY"]
+pairs = ['GBP_USD', 'AUD_USD', "NZD_USD", "EUR_USD", "GBP_JPY", "CAD_CHF", "GBP_PLN"]
 pos_size = 1000
 
 # indicators
@@ -54,21 +54,21 @@ def trade_signal(DF,l_s):
     signal = ""
     df = copy.deepcopy(DF)
     if l_s == "":
-        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1)))  and df["RSI"].tolist()[-1] > 60:
             signal = "Buy"
-        elif (((df["above_cloud"].tolist()[-1] == -1)  and (df["A_above_B"].tolist()[-1] == -1)  and (df['tenkan_kiju_cross'].tolist()[-1]==-1))  or df['price_tenkan_cross'].tolist()[-1] == -1)  and df["RSI"].tolist()[-1] < 40:
+        elif (((df["above_cloud"].tolist()[-1] == -1)  and (df["A_above_B"].tolist()[-1] == -1)  and (df['tenkan_kiju_cross'].tolist()[-1]==-1)))  and df["RSI"].tolist()[-1] < 40:
             signal = "Sell"
    
-    elif l_s == "long":
-        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]==1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+    elif l_s == "short":
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]==1)))  and df["RSI"].tolist()[-1] > 60:
             signal = "Close_Buy"
-        elif (df['tenkan_kiju_cross'].tolist()[-1]==-1):
+        elif (df['tenkan_kiju_cross'].tolist()[-1]==1):
             signal = "Close"
         
-    elif l_s == "short":
-        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1))  or df['price_tenkan_cross'].tolist()[-1] == 1)  and df["RSI"].tolist()[-1] > 60:
+    elif l_s == "long":
+        if (((df["above_cloud"].tolist()[-1] == -1)  and (df["A_above_B"].tolist()[-1] == -1)  and (df['tenkan_kiju_cross'].tolist()[-1]== -1)))  and df["RSI"].tolist()[-1] < 40:
             signal = "Close_Sell"
-        elif (df['tenkan_kiju_cross'].tolist()[-1]==1):
+        elif (df['tenkan_kiju_cross'].tolist()[-1]==-1):
             signal = "Close"
             
 
@@ -97,10 +97,10 @@ def market_order(instrument,units,sl, tp):
             "positionFill": "DEFAULT"
                     }
             }
+    
     r = orders.OrderCreate(accountID=account_id, data=data)
     client.request(r)
     
-
 
 # Script for trading
 
@@ -118,7 +118,7 @@ def main():
                 else:
                     long_short='short'
                 
-            params = {"count":250,"granularity": "M5"}
+            params = {"count":2500,"granularity": "M15"}
             candles = instruments.InstrumentsCandles(instrument=currency, params=params)
             client.request(candles)
             ohlc_dict = candles.response["candles"]
@@ -141,18 +141,18 @@ def main():
             ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) <= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] > ohlc_df['tenkan_sen']), 1, ohlc_df['price_tenkan_cross'])
             ohlc_df['price_tenkan_cross'] = np.where((ohlc_df['o'].shift(1) >= ohlc_df['tenkan_sen'].shift(1)) & (ohlc_df['o'] < ohlc_df['tenkan_sen']), -1, ohlc_df['price_tenkan_cross'])
             signal = trade_signal(ohlc_df,long_short)
-            
+
             if signal == "Buy":
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
-                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.0004,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.9975,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.004,3)
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
             elif signal == "Sell":
-                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.001,3)
-                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.0025,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.996,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -162,33 +162,35 @@ def main():
                 print('position closed')
             
             elif signal == "Close_Buy":
-                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
-                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.0004,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.9975,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.004,3)
                 market_order(currency,pos_size,sl,tp)
                 market_order(currency,pos_size,sl,tp)
                 print("short closed and long entered for ", currency)
             
             elif signal == "Close_Sell":
-                sl = round(float(rv["prices"][0]["asks"][0]["price"]) * 1.001,3)
-                tp = round(float(rv["prices"][0]["asks"][0]["price"]) * 0.997,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.0025,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.996,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
                 
-                
+                 
     except:
         print("error encountered....skipping this iteration")
 
 
-
 starttime=time.time()
-timeout = time.time() + 60  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
+timeout = time.time() + 60*45  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
 
 while time.time() <= timeout:
     try:
         print("passthrough at ",time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
         main()
-        time.sleep(300 - ((time.time() - starttime) % 300.0)) # 5 minute interval between each new execution
+        time.sleep(900 - ((time.time() - starttime) % 900.0)) # 5 minute interval between each new execution
     except KeyboardInterrupt:
         print('\n\nKeyboard exception received. Exiting.')
-        exit()    
+        exit()
+  
+    
+
