@@ -74,7 +74,7 @@ def maximum_drawdown(DF):
 tickers_signal = {}
 tickers_ret = {}
 for ticker in stocks:
-    temp = yf.download(ticker, period="60d", interval='30m')
+    temp = yf.download(ticker, period="60d", interval='15m')
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
@@ -121,11 +121,11 @@ for ticker in stocks:
                 tickers_signal[ticker] = "Buy"
                 
                 sl = df[ticker]["Adj Close"][i] * 0.998
-                tp = df[ticker]["Adj Close"][i] * 1.004
+                tp = df[ticker]["Adj Close"][i] * 1.005
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))and df[ticker]["RSI"][i] < 40) :
                 tickers_signal[ticker] = "Sell"
                 sl = df[ticker]["Adj Close"][i] * 1.002
-                tp = df[ticker]["Adj Close"][i] * 0.996
+                tp = df[ticker]["Adj Close"][i] * 0.995
                 
         elif tickers_signal[ticker] == "Buy":
 
@@ -174,7 +174,7 @@ for ticker in stocks:
                 sl_count += 1
                 trade_count += 1
             
-            elif (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 60:
+            elif (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))  or df[ticker]['price_tenkan_cross'][i-1] == 1)  and df[ticker]["RSI"][i] > 70:
                 tickers_ret[ticker].append(((df[ticker]["Adj Close"][i-1]/df[ticker]["Adj Close"][i])-1)*50)
                 tickers_signal[ticker] = "Buy"
                 trade_count += 1

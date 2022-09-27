@@ -145,14 +145,14 @@ def main():
             if signal == "Buy":
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.9975,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.004,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.005,3)
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
             elif signal == "Sell":
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.0025,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.996,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -162,15 +162,15 @@ def main():
                 print('position closed')
             
             elif signal == "Close_Buy":
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.9975,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.004,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.005,3)
                 market_order(currency,pos_size,sl,tp)
                 market_order(currency,pos_size,sl,tp)
                 print("short closed and long entered for ", currency)
             
             elif signal == "Close_Sell":
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.0025,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.996,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
@@ -181,7 +181,7 @@ def main():
 
 
 starttime=time.time()
-timeout = time.time() + 60*45  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
+timeout = time.time() + 60*60*24  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
 
 while time.time() <= timeout:
     try:
