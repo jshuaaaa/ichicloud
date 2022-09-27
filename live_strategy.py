@@ -54,13 +54,13 @@ def trade_signal(DF,l_s):
     signal = ""
     df = copy.deepcopy(DF)
     if l_s == "":
-        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1)))  and df["RSI"].tolist()[-1] > 60:
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]-1)))  and df["RSI"].tolist()[-1] > 70:
             signal = "Buy"
         elif (((df["above_cloud"].tolist()[-1] == -1)  and (df["A_above_B"].tolist()[-1] == -1)  and (df['tenkan_kiju_cross'].tolist()[-1]==-1)))  and df["RSI"].tolist()[-1] < 40:
             signal = "Sell"
    
     elif l_s == "short":
-        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]==1)))  and df["RSI"].tolist()[-1] > 60:
+        if (((df["above_cloud"].tolist()[-1] == 1)  and (df["A_above_B"].tolist()[-1] == 1)  and (df['tenkan_kiju_cross'].tolist()[-1]==1)))  and df["RSI"].tolist()[-1] > 70:
             signal = "Close_Buy"
         elif (df['tenkan_kiju_cross'].tolist()[-1]==1):
             signal = "Close"
