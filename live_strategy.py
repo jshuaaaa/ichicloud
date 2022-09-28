@@ -8,8 +8,8 @@ import pandas as pd
 import numpy as np
 import time
 import copy
+import os
 
-# Account credentials and parameters
 token_path = "D:\My Apps\API-KEYS\oanda.txt"
 client = oandapyV20.API(access_token=open(token_path, "r").read(),environment="practice")
 account_id = "101-001-23303695-001"
@@ -93,7 +93,7 @@ def market_order(instrument,units,sl, tp):
     account_id = "101-001-23303695-001"
     data = {
             "order": {
-            "price": "",
+            "price": "1",
             "stopLossOnFill": {
             "timeInForce": "GTC",
             "price": str(sl)
@@ -158,8 +158,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) - round(2*ATR(ohlc_df,14),3))
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) + round(4*ATR(ohlc_df,14),3))
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) - round(2*ATR(ohlc_df,14),3),3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) + round(4*ATR(ohlc_df,14),3),3)
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
@@ -167,8 +167,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) + round(2*ATR(ohlc_df,14),3))
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) - round(4*ATR(ohlc_df,14),3))
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) + round(2*ATR(ohlc_df,14),3),3)
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) - round(4*ATR(ohlc_df,14),3),3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -205,17 +205,7 @@ def main():
         print("error encountered....skipping this iteration")
 
 
-starttime=time.time()
-timeout = time.time() + 60*60*24  # 60 seconds times 60 times 8 meaning the script will run for 8 hrs
 
-while time.time() <= timeout:
-    try:
-        print("passthrough at ",time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        main()
-        time.sleep(900 - ((time.time() - starttime) % 900.0)) # 5 minute interval between each new execution
-    except KeyboardInterrupt:
-        print('\n\nKeyboard exception received. Exiting.')
-        exit()
   
     
 

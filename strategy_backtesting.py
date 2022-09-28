@@ -86,7 +86,7 @@ def maximum_drawdown(DF):
 tickers_signal = {}
 tickers_ret = {}
 for ticker in stocks:
-    temp = yf.download(ticker, period="60d", interval='15m')
+    temp = yf.download(ticker, period="2y", interval='1h')
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
@@ -132,12 +132,12 @@ for ticker in stocks:
             if (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))and df[ticker]["RSI"][i] > 70) :
                 tickers_signal[ticker] = "Buy"
                 
-                sl = df[ticker]["Adj Close"][i] - round(3*ATR(df[ticker],14),3)
-                tp = df[ticker]["Adj Close"][i] + round(6*ATR(df[ticker],14),3)
+                sl = df[ticker]["Adj Close"][i] - round(2*ATR(df[ticker],14),3)
+                tp = df[ticker]["Adj Close"][i] + round(4*ATR(df[ticker],14),3)
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))and df[ticker]["RSI"][i] < 40) :
                 tickers_signal[ticker] = "Sell"
-                sl = df[ticker]["Adj Close"][i] + round(3*ATR(df[ticker],14),3)
-                tp = df[ticker]["Adj Close"][i] - round(6*ATR(df[ticker],14),3)
+                sl = df[ticker]["Adj Close"][i] + round(2*ATR(df[ticker],14),3)
+                tp = df[ticker]["Adj Close"][i] - round(4*ATR(df[ticker],14),3)
                 
         elif tickers_signal[ticker] == "Buy":
 
