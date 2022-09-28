@@ -39,6 +39,18 @@ def RSI(DF, n=14):
     df["rsi"] = 100 - (100/(1+df["rs"]))
     return df["rsi"]
 
+def ATR(DF, n):
+    "function to calculate True Range and Average True Range"
+    df = DF.copy()
+    df['H-L']=abs(df['High']-df['Low'])
+    df['H-PC']=abs(df['High']-df['Adj Close'].shift(1))
+    df['L-PC']=abs(df['Low']-df['Adj Close'].shift(1))
+    df['TR']=df[['H-L','H-PC','L-PC']].max(axis=1,skipna=False)
+    df['ATR'] = df['TR'].rolling(n).mean()
+    #df['ATR'] = df['TR'].ewm(span=n,adjust=False,min_periods=n).mean()
+    df2 = df.drop(['H-L','H-PC','L-PC'],axis=1)
+    return round(df2["ATR"][-1],4)
+
 #KPIs
 
 def CAGR(DF):
@@ -120,12 +132,12 @@ for ticker in stocks:
             if (((df[ticker]["above_cloud"][i-1] == 1)  and (df[ticker]["A_above_B"][i-1] == 1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==1))and df[ticker]["RSI"][i] > 70) :
                 tickers_signal[ticker] = "Buy"
                 
-                sl = df[ticker]["Adj Close"][i] * 0.998
-                tp = df[ticker]["Adj Close"][i] * 1.005
+                sl = df[ticker]["Adj Close"][i] - round(3*ATR(df[ticker],14),3)
+                tp = df[ticker]["Adj Close"][i] + round(6*ATR(df[ticker],14),3)
             elif (((df[ticker]["above_cloud"][i-1] == -1)  and (df[ticker]["A_above_B"][i-1] == -1)  and (df[ticker]['tenkan_kiju_cross'][i-1]==-1))and df[ticker]["RSI"][i] < 40) :
                 tickers_signal[ticker] = "Sell"
-                sl = df[ticker]["Adj Close"][i] * 1.002
-                tp = df[ticker]["Adj Close"][i] * 0.995
+                sl = df[ticker]["Adj Close"][i] + round(3*ATR(df[ticker],14),3)
+                tp = df[ticker]["Adj Close"][i] - round(6*ATR(df[ticker],14),3)
                 
         elif tickers_signal[ticker] == "Buy":
 

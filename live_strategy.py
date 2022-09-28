@@ -48,6 +48,18 @@ def RSI(DF, n=14):
     df["rsi"] = 100 - (100/(1+df["rs"]))
     return df["rsi"]
 
+def ATR(DF, n):
+    "function to calculate True Range and Average True Range"
+    df = DF.copy()
+    df['H-L']=abs(df['h']-df['l'])
+    df['H-PC']=abs(df['h']-df['c'].shift(1))
+    df['L-PC']=abs(df['l']-df['c'].shift(1))
+    df['TR']=df[['H-L','H-PC','L-PC']].max(axis=1,skipna=False)
+    df['ATR'] = df['TR'].rolling(n).mean()
+    #df['ATR'] = df['TR'].ewm(span=n,adjust=False,min_periods=n).mean()
+    df2 = df.drop(['H-L','H-PC','L-PC'],axis=1)
+    return round(df2["ATR"][-1],4)
+
 # Live trading functions
 
 def trade_signal(DF,l_s):
@@ -146,8 +158,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.005,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) - round(2*ATR(ohlc_df,14),3))
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) + round(4*ATR(ohlc_df,14),3))
                 market_order(currency,pos_size,sl,tp)
                 print("long entered for ", currency)
             
@@ -155,8 +167,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) + round(2*ATR(ohlc_df,14),3))
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) - round(4*ATR(ohlc_df,14),3))
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
@@ -172,8 +184,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.005,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) - round(2*ATR(ohlc_df,14),3))
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) + round(4*ATR(ohlc_df,14),3))
                 market_order(currency,pos_size,sl,tp)
                 market_order(currency,pos_size,sl,tp)
                 print("short closed and long entered for ", currency)
@@ -182,8 +194,8 @@ def main():
                 params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
-                sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
-                tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
+                sl = round(float(rv["prices"][0]["bids"][0]["price"]) + round(2*ATR(ohlc_df,14),3))
+                tp = round(float(rv["prices"][0]["bids"][0]["price"]) - round(4*ATR(ohlc_df,14),3))
                 market_order(currency,-1*pos_size,sl,tp)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
