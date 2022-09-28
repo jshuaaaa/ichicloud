@@ -143,6 +143,7 @@ def main():
             signal = trade_signal(ohlc_df,long_short)
 
             if signal == "Buy":
+                params = {"instruments": currency}
                 r = pricing.PricingInfo(accountID=account_id, params=params)
                 rv = client.request(r)
                 sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
@@ -151,17 +152,26 @@ def main():
                 print("long entered for ", currency)
             
             elif signal == "Sell":
+                params = {"instruments": currency}
+                r = pricing.PricingInfo(accountID=account_id, params=params)
+                rv = client.request(r)
                 sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
                 tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
                 market_order(currency,-1*pos_size,sl,tp)
                 print("short entered for ", currency)
             
             elif signal == "Close":
+                params = {"instruments": currency}
+                r = pricing.PricingInfo(accountID=account_id, params=params)
+                rv = client.request(r)
                 cl = trade.TradeClose(accountID=account_id, tradeID=open_pos['trades'][0]['id'])
                 client.request(cl)
                 print('position closed')
             
             elif signal == "Close_Buy":
+                params = {"instruments": currency}
+                r = pricing.PricingInfo(accountID=account_id, params=params)
+                rv = client.request(r)
                 sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.998,3)
                 tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.005,3)
                 market_order(currency,pos_size,sl,tp)
@@ -169,6 +179,9 @@ def main():
                 print("short closed and long entered for ", currency)
             
             elif signal == "Close_Sell":
+                params = {"instruments": currency}
+                r = pricing.PricingInfo(accountID=account_id, params=params)
+                rv = client.request(r)
                 sl = round(float(rv["prices"][0]["bids"][0]["price"]) * 1.002,3)
                 tp = round(float(rv["prices"][0]["bids"][0]["price"]) * 0.995,3)
                 market_order(currency,-1*pos_size,sl,tp)
