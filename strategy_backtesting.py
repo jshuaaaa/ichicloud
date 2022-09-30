@@ -86,7 +86,7 @@ def maximum_drawdown(DF):
 tickers_signal = {}
 tickers_ret = {}
 for ticker in stocks:
-    temp = yf.download(ticker, period="2y", interval='1h')
+    temp = yf.download(ticker, period="60d", interval='15m')
     temp.dropna(how="any", inplace=True)
     clhv[ticker] = temp
     clhv[ticker][['tenkan_sen', 'kijun_sen','senkou_span_a', 'senkou_span_b', 'chikou_span']] = ichimoku_cloud(clhv[ticker])
